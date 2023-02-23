@@ -1,0 +1,27 @@
+var empty = ee.Image().byte();
+
+var outline = empty.paint({
+  featureCollection: table,//Nome padrão do limite do imóvel
+  color: 1,
+  width: 2
+});
+
+var nicfi = ee.ImageCollection('projects/planet-nicfi/assets/basemaps/americas');
+
+// Filter basemaps by date and get the first image from filtered results
+var basemap= nicfi.filter(ee.Filter.date('2022-08-01','2022-08-30')).first();
+
+var planetvis = basemap.clip(table);
+
+var vis = {"bands":["R","G","B"],"min":325,"max":1375,"gamma":1.8};
+
+Map.addLayer(planetvis, vis, 'mosaic');
+Map.addLayer(
+    planetvis.normalizedDifference(['N','R']).rename('NDVI'),
+    {min:-0.55,max:0.8,palette: [
+        '8bc4f9', 'c9995c', 'c7d270','8add60','097210'
+    ]}, 'NDVI', false);
+
+Map.addLayer(outline, {palette: 'FF0000'}, 'imóvel');
+
+Map.centerObject(table,13); 
