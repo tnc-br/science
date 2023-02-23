@@ -1,0 +1,25 @@
+//Adição ao mapa do shape
+//Melhor manter o nome table para rodar o código direto, se vier geometry, renomeia para table.
+Map.addLayer(table.draw("red"),{}, 'area',0);
+
+//SRTM 30 metros
+var srtm = ee.Image("USGS/SRTMGL1_003").clip(table)
+            
+
+// Adição ao mapa
+Map.addLayer(srtm,{min: 0,
+  max: 2450,palette:['white','blue','green','yellow','orange','red']},'SRTM')    
+
+//Exportando Imagem 
+Export.image.toDrive({
+  image: srtm,
+  folder: 'srtm',
+  description: 'SRTM',
+  region: table,
+  scale: 30,
+  maxPixels: 1e13
+  });  
+  
+  
+Map.setOptions("HYBRID")
+Map.centerObject(table,8)
