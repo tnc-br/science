@@ -1,0 +1,31 @@
+var batch = require('users/fitoprincipe/geetools:batch')
+
+var empty = ee.Image().byte();
+
+var outline = empty.paint({
+  featureCollection: table,//Nome padrão do limite do imóvel
+  color: 1,
+  width: 2
+});
+
+Map.addLayer(outline, {palette: 'FF0000'}, 'Amazônia');
+
+var dataset = ee.ImageCollection('MODIS/006/MCD64A1')
+                  .filter(ee.Filter.date('2022-01-01', '2022-12-31'));
+                  
+var burnedArea = dataset.select('BurnDate');
+var burnedAreaVis = {
+  min: 30.0,
+  max: 341.0,
+  palette: ['4e0400', '951003', 'c61503', 'ff1901'],
+};
+
+Map.addLayer(burnedArea, {}, 'Burned Area');
+
+print(dataset)
+
+batch.Download.ImageCollection.toDrive(dataset, 'MODIS', {
+  name: 'modis_006_MCD64A1_{system:index}',
+  scale: 500,
+  region: table // or geometry.getInfo()
+})
