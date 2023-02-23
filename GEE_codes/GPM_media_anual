@@ -1,0 +1,60 @@
+var ROI = geometry
+
+//Visualizar polígono
+var empty = ee.Image().byte();
+
+var outline = empty.paint({
+  featureCollection: ROI,
+  color: 1,
+  width: 2
+});
+
+Map.addLayer(outline, {palette: 'FF0000'}, 'imóvel');
+
+//Map.centerObject(outline,13); 
+
+//Definição de intervalo de tempo
+var startyear = 2020; 
+var endyear = 2020; 
+
+var startmonth = 1;
+var endmonth = 12;
+
+var startdate = ee.Date.fromYMD(startyear, startmonth, 1);
+var enddate = ee.Date.fromYMD(endyear , endmonth, 1);
+
+var years = ee.List.sequence(startyear, endyear);
+
+var months = ee.List.sequence(1, 12);
+
+//Selecionando as imagens
+var chirps = ee.ImageCollection("NASA/GPM_L3/IMERG_MONTHLY_V06")
+            .select('precipitation')
+            .filterDate(startdate,enddate)
+            .filterBounds(ROI)
+            
+print(chirps);
+
+var gpmanual =  ee.ImageCollection.fromImages(
+   years.map(function(m) {
+      var w = chirps.filter(ee.Filter.calendarRange(startyear, endyear, 'year'))
+                //.filter(ee.Filter.calendarRange(m, m, 'month'))
+                .mean()
+                .multiply(24*30*12)//convertendo os dados para ter o somatório anual
+                .multiply(0.1)
+                .rename('et_gpm');
+      return w
+          .set('year', m)
+}));
+
+print('images verify', gpmanual);
+
+Export.image.toDrive({
+  image:gpmanual.select(['et_gpm']),
+  crs: 'EPSG:4326',
+  scale:11132,
+  region: geometry,
+  maxPixels:1e13,
+  description:'precipitacao_gpm_2020',
+  folder: 'tnc',
+});
