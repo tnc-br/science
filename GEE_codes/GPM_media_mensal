@@ -1,0 +1,64 @@
+var batch = require('users/fitoprincipe/geetools:batch')
+
+var ROI = geometry
+
+//Visualizar polígono
+var empty = ee.Image().byte();
+
+var outline = empty.paint({
+  featureCollection: ROI,
+  color: 1,
+  width: 2
+});
+
+Map.addLayer(outline, {palette: 'FF0000'}, 'imóvel');
+
+//Map.centerObject(outline,25); 
+
+//Definição de intervalo de tempo
+var startyear = 2017; 
+var endyear = 2021; 
+
+var startmonth = 1;
+var endmonth = 12;
+
+var startdate = ee.Date.fromYMD(startyear, startmonth, 1);
+var enddate = ee.Date.fromYMD(endyear , endmonth, 1);
+
+var years = ee.List.sequence(startyear, endyear);
+
+var months = ee.List.sequence(1, 12);
+
+//Selecionando as imagens
+var gpm = ee.ImageCollection("NASA/GPM_L3/IMERG_MONTHLY_V06")
+            .select('precipitation')
+            .filterDate(startdate,enddate)
+            .filterBounds(ROI)
+            
+print(gpm);
+
+
+var gpmanual =  ee.ImageCollection.fromImages(
+   months.map(function(m) {
+      var w = gpm.filter(ee.Filter.calendarRange(startyear, endyear, 'year'))
+                .filter(ee.Filter.calendarRange(m, m, 'month'))
+                .mean()
+                .multiply(24*30*12)
+                .multiply(0.1)//convertendo os dados para ter o somatório anual
+                .clip(ROI)
+                .rename('et_gpm');
+      return w
+          .set('month', m)
+}));
+
+print('images verify', gpmanual);
+
+//var gpmmedia = gpmanual.median().clip(ROI)
+
+//print(gpmmedia)
+
+batch.Download.ImageCollection.toDrive(gpmanual, 'GPM', {
+  name: 'GPM_baixo_tocantins_{system:index}',
+  scale: 11132,
+  region: geometry // or geometry.getInfo()
+})
