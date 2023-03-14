@@ -1,0 +1,59 @@
+#Código para a organização da base de dados extraída diretamente do portal cacau floresta
+#Autora: Thaciane Silva
+#Última atualização: 14/03/2023
+
+install.packages("tidyverse")
+install.packages("stringr")
+install.packages("openxlsx")
+
+library("tidyverse")
+library("stringr")
+library(openxlsx)
+library(readxl)
+
+#--------------------Importar os datasets---------------------------------------
+dataset_inicial <- read_excel("propriedades.xls")
+
+View(dataset_inicial) # Mostra a base de dados completa em uma nova aba
+
+nova_base <- dataset_inicial
+
+
+#--------------------Select-----------------------------------------------------
+# Função "select": tem a finalidade principal de extair variáveis selecionadas 
+# Também pode ser utilizada para reposicionar as variáveis no dataset
+
+extrai_info <- nova_base[1:814, c("id", "nome", "municipio","ppt_pri", "area_cal", "mf")]
+dim(extrai_info)
+
+
+#--------------------Replace-----------------------------------------------------
+# Função "replace": tem a finalidade principal de substituir caracteres nas colunas
+
+extrai_info$nome <- str_replace(extrai_info$nome, "b'", "")
+extrai_info$municipio <- str_replace(extrai_info$municipio, "b'", "")
+extrai_info$ppt_pri <- str_replace(extrai_info$ppt_pri, "b'", "")
+head(extrai_info, n=5)        
+
+rep_str = c('xf3' = 'o', 'xe3' = 'ã','xe9' = 'é','xc9' = 'é','xc7' = 'ç','xe1' = 'á','xe7' = 'ç','xed' = 'í','xe2' = 'â','xe2' = 'â','xc3' = 'ã','xea' = 'ê','xcd' = 'í','xf4' = 'ô','xc1' = 'á','xfa' = 'ú','xca' = 'ê', 'xc2' = 'â', 'xd5' = 'õ','xd3' = 'ó','xda' = 'ú')
+
+remove_backslash <- function(x) {
+  gsub("\\\\", "", x)
+}
+
+# apply function to each column using apply()
+extrai_info[, c("nome", "municipio", "ppt_pri")] <- apply(extrai_info[, c("nome", "municipio", "ppt_pri")], 2, remove_backslash)
+
+
+extrai_info$municipio <- str_replace(extrai_info$municipio, " - PA", "")
+extrai_info$nome <- str_replace(extrai_info$nome, "_", " ")
+
+extrai_info$nome <- str_to_title(extrai_info$nome)
+extrai_info$municipio <- str_to_title(extrai_info$municipio)
+extrai_info$ppt_pri <- str_to_title(extrai_info$ppt_pri)
+extrai_info
+
+#--------------------Export-----------------------------------------------------
+# Função "write": tem a finalidade principal de exportar o df para um arquivo xlsx ou outros.
+
+write.xlsx(extrai_info, "trat_propriedades.xlsx", rowNames = FALSE)
