@@ -1,0 +1,38 @@
+var ROI = table
+var empty = ee.Image().byte();
+var outline = empty.paint({
+  featureCollection: ROI,
+  color: 1,
+  width: 2
+});
+Map.addLayer(outline, {palette: 'BFAB25'}, 'ROI',false);
+
+var mb = ee.ImageCollection('projects/mapbiomas-workspace/FOGO/MONITORAMENTO/collection-fire-monthly-sentinel2-v2')
+     .filter(ee.Filter.date('2022-12-01', '2022-12-31'))
+     .mosaic()
+
+var datamask = mb.select('FireMonth');
+// Create a binary mask.
+var mask = datamask.eq(1);
+var image = mb.updateMask(mask);
+
+Map.addLayer(image, {palette: '6A0136'}, 'Fogo', false);
+
+var vectors = image.reduceToVectors({
+  geometry: table,
+  crs: image.projection(),
+  scale: 10,
+  geometryType: 'polygon',
+  eightConnected: false,
+  labelProperty: 'label',
+  reducer: null,
+  tileScale: 4,
+  maxPixels:1e13
+});
+
+Export.table.toDrive({
+  collection:ee.FeatureCollection(vectors),
+  description:'monitor_fogo_araguaia_jan',
+  folder:'fire_data',
+  fileFormat:'shp'
+});
