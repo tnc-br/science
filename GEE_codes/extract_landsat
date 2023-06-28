@@ -1,0 +1,20 @@
+var image = ee.ImageCollection('LANDSAT/LC08/C02/T1_RT_TOA') //mudar o endereço se precisar das landsat anteriores
+    .filterMetadata('CLOUD_COVER', 'less_than', 5)
+    .filterDate('2013-08-01', '2013-08-30')
+    .median();
+
+var RecorteS2 = image.clip(geometry);
+
+var landsatimg = RecorteS2.toFloat()
+
+Map.addLayer(landsatimg,{bands:['B4','B3','B2'], min:0.0396, max:0.1730},'RGB Nuvem')
+
+Export.image.toDrive({
+  image:landsatimg.select(['B4','B3','B2']),
+  crs: 'EPSG:4326',
+  scale:30,
+  region: geometry,
+  maxPixels:1e13,
+  description:'landsat_jul_out_2014',
+  folder: 'TNC',
+});
