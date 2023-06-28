@@ -1,0 +1,25 @@
+var S2 = ee.ImageCollection ('COPERNICUS/S2') 
+  .filterDate('2020-08-01', '2020-12-31')
+  .filterBounds(table)
+  .filterMetadata("CLOUDY_PIXEL_PERCENTAGE", "less_than", 5);
+
+var Mediana = S2.median();
+
+var RecorteS2 = Mediana.clip(table);
+
+
+Map.addLayer(RecorteS2, {
+   bands:['B4','B3','B2'],
+  min:325,
+  max:1375,
+},'RGB', true);
+
+Export.image.toDrive({
+  image:RecorteS2.select(['B4','B3','B2']),
+  crs: 'EPSG:4326',
+  scale:10,
+  region: table,
+  maxPixels:1e13,
+  description:'mapa_2020',
+  folder: 'TNC',
+});
