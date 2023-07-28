@@ -1,0 +1,47 @@
+//O produto MOD11A1 V6 fornece valores diários da temperatura da superfície terrestre (LST) e da emissividade numa grelha de 1200 x 1200 quilómetros. O valor da temperatura é derivado do produto MOD11_L2 swath. 
+//Definição da área de interesse
+var roi = ee.FeatureCollection('projects/ee-cliciajulie/assets/municipios_ara')
+
+//Desenhando o Contorno da ROI
+var empty = ee.Image().byte();
+var contorno = empty.paint({
+  featureCollection: roi,
+  color: 1,
+  width: 2
+});
+
+Map.addLayer(contorno, {palette:['red']},'MUN AOI')
+Map.centerObject(roi)
+
+
+//Coleção 
+function scale(image){
+  return image.multiply(0.02).subtract(273).clip(roi).copyProperties(image,image.propertyNames())
+}
+
+var temperature = ee.ImageCollection("MODIS/006/MOD11A1")
+                            .select('LST_Day_1km')
+                            .map(scale)
+                            .filterDate('2012-01-01', '2019-12-31')
+                            .filterBounds(roi);
+print('qtds',temperature.size())
+
+//Redução de média
+var media = temperature.mean()
+//var max = temperature.max()
+//var min = temperature.min()
+
+//Visualizar a imagem 
+//Map.addLayer(max, {palette:['white','green','orange','red'],min:33, max:47},'Temperatura Máxima')
+Map.addLayer(media, {palette:['white','green','orange','red'],min:20, max:28},'Temperatura Média')
+//Map.addLayer(min, {palette:['white','green','orange','red'],min:0, max:11},'Temperatura Mínima')
+
+
+// Export the image, specifying the CRS, transform, and region.
+Export.image.toDrive({
+  image: media,
+  description: 'MOD11A1_2012_2019_MUN_PARA',
+  //crs: projection.crs,
+  //crsTransform: projection.transform,
+  region: roi
+});
